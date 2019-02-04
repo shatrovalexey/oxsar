@@ -3,6 +3,7 @@
 ### ТРЕБОВАНИЯ ###
 * Python v>=3.6
 * `apt-get install python3-selenium chromium-chromedriver`
+* `pip3 install lxml`
 
 ### ЗАПУСК ###
 * `python3 run.py --login="${LOGIN}" --password="${PASSWORD}"` - просмотр всех галактик и систем
