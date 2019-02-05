@@ -36,11 +36,9 @@ try :
 
 	form = wdh.find_element_by_name( 'oxsar_form' )
 	field = form.find_element_by_name( 'username' )
-	field.clear( )
 	field.send_keys( args.login )
 
 	field = form.find_element_by_name( 'password' )
-	field.clear( )
 	field.send_keys( args.password )
 	field.send_keys( Keys.RETURN )
 
