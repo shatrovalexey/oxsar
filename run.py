@@ -5,8 +5,8 @@ from lxml import html
 import argparse
 
 argv = argparse.ArgumentParser( description = 'Веб-краулер' )
-argv.add_argument( '--galaxy' , help = 'Галактика' )
-argv.add_argument( '--system' , help = 'Система' )
+argv.add_argument( '--galaxy' , type = int , help = 'Галактика' )
+argv.add_argument( '--system' , type = int , help = 'Система' )
 argv.add_argument( '--login' , required = True , help = 'Логин' )
 argv.add_argument( '--password' , required = True , help = 'Пароль' )
 args = argv.parse_args( )
@@ -21,63 +21,51 @@ planets = range( 1 , 31 )
 
 options = Options( )
 options.add_experimental_option( 'prefs' , {
-	'profile.managed_default_content_settings.images' : 2
+	'profile.managed_default_content_settings.images' : 2 ,
+	'plugins.plugins_disabled' : [ 'Shockwave Flash' ]
 } )
-options.add_argument( '--no-sandbox' )
-options.add_argument( '--disable-dev-shm-usage' )
-options.add_argument( '--headless' )
-options.add_argument( '--disable-gpu' )
-options.add_argument( 'User-Agent=Mozilla/5.0 (Windows NT 4.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36' )
+for option in [
+	'disable-infobars' , 'start-maximized' ,
+	'--no-sandbox' , '--disable-dev-shm-usage' , '--headless' , '--disable-gpu' , '--disable-extensions' ,
+	'User-Agent=Mozilla/5.0 (Windows NT 4.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
+] : options.add_argument( option )
 
-webdriver = webdriver.Chrome( executable_path = '/usr/lib/chromium-browser/chromedriver' , chrome_options = options )
-webdriver.get( 'http://oxsar.ru/index.php/site/index' )
+try :
+	wdh = webdriver.Chrome( executable_path = '/usr/lib/chromium-browser/chromedriver' , chrome_options = options )
+	wdh.get( 'http://oxsar.ru/index.php/site/index' )
 
-form = webdriver.find_element_by_css_selector( '.left_reset_form' )
-login_login = form.find_element_by_css_selector( '.left_text_login' )
-login_passwd = form.find_element_by_css_selector( '.left_text_passwd' )
-login_submit = form.find_element_by_css_selector( '.left_submit_btn' )
+	form = wdh.find_element_by_name( 'oxsar_form' )
+	field = form.find_element_by_name( 'username' )
+	field.clear( )
+	field.send_keys( args.login )
 
-login_login.clear( )
-login_passwd.clear( )
+	field = form.find_element_by_name( 'password' )
+	field.clear( )
+	field.send_keys( args.password )
+	field.send_keys( Keys.RETURN )
 
-login_login.send_keys( args.login )
-login_passwd.send_keys( args.password )
-login_submit.send_keys( Keys.RETURN )
+	wdh.get( 'http://dm.oxsar.ru/game.php/Galaxy' )
 
-webdriver.get( 'http://dm.oxsar.ru/game.php/Galaxy' )
+	for galaxy in galaxyes :
+		for system in systems :
+			form = wdh.find_element_by_name( 'galaxy_form' )
+			field = form.find_element_by_name( 'galaxy' )
+			field.clear( )
+			field.send_keys( galaxy )
 
-for galaxy in galaxyes :
-	print( 'galaxy %s' % galaxy )
+			field = form.find_element_by_name( 'system' )
+			field.clear( )
+			field.send_keys( system )
+			field.send_keys( Keys.RETURN )
 
-	for system in systems :
-		print( 'galaxy %s, system %s' % ( galaxy , system ) )
+			print( "%s\t%s" % ( galaxy , system ) )
 
-		try :
-			form = webdriver.find_element_by_name( 'galaxy_form' )
-			input_galaxy = form.find_element_by_name( 'galaxy' )
-			input_system = form.find_element_by_name( 'system' )
+			for planet in planets :
+				try :
+					value = wdh.execute_script( 'return debris_%s' % planet )
+					items = html.fromstring( value ).xpath( '//tr[position( )>1]//text( )' )
 
-			input_galaxy.clear( )
-			input_galaxy.send_keys( galaxy )
-
-			input_system.clear( )
-			input_system.send_keys( system )
-			input_system.send_keys( Keys.RETURN )
-		except : continue
-
-		for planet in planets :
-			try :
-				value = webdriver.execute_script( 'return debris_%s' % planet )
-				items = html.fromstring( value ).xpath( '//tr[position( )>1]//text( )' )
-
-				if not len( items ) : continue
-
-				print( "%s-%s-%s" % ( galaxy , system , planet ) )
-
-				while len( items ) :
-					name = items.pop( 0 )[:-1]
-					value = items.pop( 0 )
-
-					print( "%s\t%s" % ( name , value ) )
-			except : pass
-webdriver.quit( )
+					if items : print( "%s\t%s\t%s\t%s" % ( galaxy , system , planet , items ) )
+				except : pass
+except Exception as exception : print( exception )
+finally : wdh.quit( )
