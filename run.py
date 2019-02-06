@@ -42,28 +42,18 @@ try :
 	field.send_keys( args.password )
 	field.send_keys( Keys.RETURN )
 
-	wdh.get( 'http://dm.oxsar.ru/game.php/Galaxy' )
-
 	for galaxy in galaxyes :
 		for system in systems :
-			form = wdh.find_element_by_name( 'galaxy_form' )
-			field = form.find_element_by_name( 'galaxy' )
-			field.clear( )
-			field.send_keys( galaxy )
-
-			field = form.find_element_by_name( 'system' )
-			field.clear( )
-			field.send_keys( system )
-			field.send_keys( Keys.RETURN )
-
-			print( "%s\t%s" % ( galaxy , system ) )
+			wdh.get( 'http://dm.oxsar.ru/game.php/go:Galaxy/galaxy:%s/system:%s' % ( galaxy , system ) )
 
 			for planet in planets :
 				try :
 					value = wdh.execute_script( 'return debris_%s' % planet )
 					items = html.fromstring( value ).xpath( '//tr[position( )>1]//text( )' )
 
-					if items : print( "%s\t%s\t%s\t%s" % ( galaxy , system , planet , items ) )
+					assert items
+
+					print( "%s\t%s\t%s\t%s" % ( galaxy , system , planet , "\t" . join( items ) ) )
 				except : pass
 except Exception as exception : print( exception )
 finally : wdh.quit( )
