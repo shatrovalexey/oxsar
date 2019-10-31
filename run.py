@@ -1,3 +1,4 @@
+from math import ceil
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -30,6 +31,8 @@ for option in [
 	'User-Agent=Mozilla/5.0 (Windows NT 4.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2049.0 Safari/537.36'
 ] : options.add_argument( option )
 
+result = { }
+
 try :
 	wdh = webdriver.Chrome( executable_path = '/usr/lib/chromium-browser/chromedriver' , chrome_options = options )
 	wdh.get( 'http://oxsar.ru/index.php/site/index' )
@@ -44,6 +47,8 @@ try :
 
 	for galaxy in galaxyes :
 		for system in systems :
+			print( system )
+
 			wdh.get( 'http://dm.oxsar.ru/game.php/go:Galaxy/galaxy:%s/system:%s' % ( galaxy , system ) )
 
 			for planet in planets :
@@ -53,7 +58,28 @@ try :
 
 					assert items
 
-					print( "%s\t%s\t%s\t%s" % ( galaxy , system , planet , "\t" . join( items ) ) )
+					key = "%s\t%s\t%s" % ( galaxy , system , planet )
+					result[ key ] = {
+						"total" : 0 ,
+						"items" : { }
+					}
+
+					while items :
+						name = items.pop( 0 )[ :-1 ]
+						value = int( items.pop( 0 ).replace( '.' , '' ) )
+
+						result[ key ][ 'items' ][ name ] = value ;
+						result[ key ][ 'total' ] += value
 				except : pass
-except Exception as exception : print( exception )
+	assert not result
+except Exception as exception :
+	print( exception )
+
+	for ( key , value ) in sorted( result.items( ) , key = lambda kv : kv[ 1 ][ 'total' ] ) :
+		if value[ 'total' ] < 0.5e6 : continue
+
+		print( key )
+		print( { 'Переработчиков' , ceil( value[ 'total' ] / 2e4 ) } )
+		print( value[ 'items' ] )
+		print( )
 finally : wdh.quit( )
